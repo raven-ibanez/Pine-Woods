@@ -1,13 +1,13 @@
 import React from 'react';
-import { useCategories } from '../hooks/useCategories';
+import { useRoomServiceCategories } from '../hooks/useRoomServiceCategories';
 
-interface SubNavProps {
+interface RoomServiceSubNavProps {
   selectedCategory: string;
   onCategoryClick: (categoryId: string) => void;
 }
 
-const SubNav: React.FC<SubNavProps> = ({ selectedCategory, onCategoryClick }) => {
-  const { categories, loading } = useCategories();
+const RoomServiceSubNav: React.FC<RoomServiceSubNavProps> = ({ selectedCategory, onCategoryClick }) => {
+  const { categories, loading } = useRoomServiceCategories();
 
   return (
     <div className="sticky top-16 z-40 bg-pine-cream/90 backdrop-blur-md border-b border-pine-stone">
@@ -53,6 +53,4 @@ const SubNav: React.FC<SubNavProps> = ({ selectedCategory, onCategoryClick }) =>
   );
 };
 
-export default SubNav;
-
-
+export default RoomServiceSubNav;

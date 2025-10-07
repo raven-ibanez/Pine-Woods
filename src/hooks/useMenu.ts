@@ -11,7 +11,7 @@ export const useMenu = () => {
     try {
       setLoading(true);
       
-      // Fetch menu items with their variations and add-ons
+      // Fetch menu items with their variations and add-ons (exclude room service only items)
       const { data: items, error: itemsError } = await supabase
         .from('menu_items')
         .select(`
@@ -19,6 +19,7 @@ export const useMenu = () => {
           variations (*),
           add_ons (*)
         `)
+        .eq('room_service_only', false)
         .order('created_at', { ascending: true });
 
       if (itemsError) throw itemsError;

@@ -2,14 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ramen Yard Custom Styles */
-/* Minimal helpers for ramen palette when needed outside tailwind tokens */
-.bg-ramen-cream { background-color: #FFF3E0; }
-.bg-ramen-beige { background-color: #F7E7CE; }
-.text-ramen-red { color: #D7263D; }
-.text-ramen-dark { color: #0B0A0A; }
-.border-ramen-sesame { border-color: #D1C7B7; }
-.ring-ramen-gold { --tw-ring-color: #E0A106; }
+/* Pine Woods Campsite Custom Styles */
+/* Natural color helpers for outdoor theme */
+.bg-pine-cream { background-color: #F5F5DC; }
+.bg-pine-sand { background-color: #F4E4BC; }
+.text-pine-forest { color: #2D5016; }
+.text-pine-bark { color: #3C2414; }
+.border-pine-stone { border-color: #8B7355; }
+.ring-pine-sun { --tw-ring-color: #FFD700; }
 
 /* Hide scrollbar for mobile nav */
 .scrollbar-hide {

@@ -24,6 +24,7 @@ export const useCategories = () => {
         .from('categories')
         .select('*')
         .eq('active', true)
+        .not('id', 'in', '(breakfast,lunch,dinner,snacks,beverages,desserts)')
         .order('sort_order', { ascending: true });
 
       if (fetchError) throw fetchError;

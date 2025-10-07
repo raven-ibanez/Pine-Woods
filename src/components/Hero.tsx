@@ -2,21 +2,21 @@ import React from 'react';
 
 const Hero: React.FC = () => {
   return (
-    <section className="relative bg-gradient-to-br from-ramen-cream to-white py-20 px-4">
+    <section className="relative bg-gradient-to-br from-pine-cream to-pine-sand py-20 px-4">
       <div className="max-w-4xl mx-auto text-center">
-        <h1 className="text-5xl md:text-6xl font-noto-kr font-semibold text-ramen-dark mb-6 animate-fade-in">
-          Bold Korean Flavors, Slurpy Ramen Bowls
-          <span className="block text-ramen-red mt-2">Ramen Yard</span>
+        <h1 className="text-5xl md:text-6xl font-rustic font-semibold text-pine-forest mb-6 animate-fade-in">
+          Nature's Paradise, Adventure Awaits
+          <span className="block text-pine-sage mt-2">Pine Woods Campsite & Beach Resort</span>
         </h1>
-        <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto animate-slide-up">
-          Handcrafted broths, springy noodles, Korean street-food favorites.
+        <p className="text-xl text-pine-bark mb-8 max-w-2xl mx-auto animate-slide-up">
+          Experience the perfect blend of forest camping and beach relaxation in our natural paradise.
         </p>
         <div className="flex justify-center">
           <a 
-            href="#ramen"
-            className="bg-ramen-red text-white px-8 py-3 rounded-full hover:bg-ramen-kimchi transition-all duration-300 transform hover:scale-105 font-medium"
+            href="#menu"
+            className="bg-pine-forest text-white px-8 py-3 rounded-full hover:bg-pine-sage transition-all duration-300 transform hover:scale-105 font-medium"
           >
-            Explore Menu
+            Explore Our Services
           </a>
         </div>
       </div>
