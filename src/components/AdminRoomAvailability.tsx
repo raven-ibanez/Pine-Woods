@@ -82,9 +82,6 @@ const AdminRoomAvailability: React.FC = () => {
 
     setLoading(true);
     try {
-      console.log('Loading availability for room:', selectedRoom.id);
-      console.log('Year:', currentDate.getFullYear(), 'Month:', currentDate.getMonth() + 1);
-      
       const { data, error } = await supabase.rpc('get_room_availability_month', {
         room_id_input: selectedRoom.id,
         year_input: currentDate.getFullYear(),
@@ -96,7 +93,6 @@ const AdminRoomAvailability: React.FC = () => {
         throw error;
       }
       
-      console.log('Availability data:', data);
       setAvailability(data || []);
     } catch (error) {
       console.error('Error loading availability:', error);
@@ -118,7 +114,6 @@ const AdminRoomAvailability: React.FC = () => {
           notes: item.notes
         })) || [];
         
-        console.log('Fallback availability data:', formattedData);
         setAvailability(formattedData);
       } catch (fallbackError) {
         console.error('Fallback query also failed:', fallbackError);
@@ -296,10 +291,6 @@ const AdminRoomAvailability: React.FC = () => {
     return days;
   };
 
-  // Debug logging
-  console.log('AdminRoomAvailability - selectedRoom:', selectedRoom);
-  console.log('AdminRoomAvailability - loading:', loading);
-  console.log('AdminRoomAvailability - availability:', availability);
 
   if (loading && !selectedRoom) {
     return (
@@ -351,29 +342,30 @@ const AdminRoomAvailability: React.FC = () => {
               </div>
             )}
             {!loading && (
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-rustic font-semibold text-pine-forest">
-                {selectedRoom.room_number} - {selectedRoom.room_type}
-              </h2>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setShowAddDate(true)}
-                  className="flex items-center space-x-1 px-3 py-2 bg-pine-forest text-white rounded-lg hover:bg-pine-sage transition-colors duration-200"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Add Date</span>
-                </button>
-                <button
-                  onClick={loadAvailability}
-                  className="flex items-center space-x-1 px-3 py-2 bg-pine-stone text-white rounded-lg hover:bg-pine-bark transition-colors duration-200"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  <span>Refresh</span>
-                </button>
-              </div>
-            </div>
+              <>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-rustic font-semibold text-pine-forest">
+                    {selectedRoom.room_number} - {selectedRoom.room_type}
+                  </h2>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setShowAddDate(true)}
+                      className="flex items-center space-x-1 px-3 py-2 bg-pine-forest text-white rounded-lg hover:bg-pine-sage transition-colors duration-200"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add Date</span>
+                    </button>
+                    <button
+                      onClick={loadAvailability}
+                      className="flex items-center space-x-1 px-3 py-2 bg-pine-stone text-white rounded-lg hover:bg-pine-bark transition-colors duration-200"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+                </div>
 
-            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-6">
               <button
                 onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
                 className="p-2 hover:bg-pine-sand rounded-lg transition-colors duration-200"
@@ -416,6 +408,7 @@ const AdminRoomAvailability: React.FC = () => {
                 Click dates to toggle availability
               </div>
             </div>
+              </>
             )}
           </div>
         )}
