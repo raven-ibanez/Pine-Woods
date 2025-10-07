@@ -24,6 +24,10 @@ export const useRoomServiceMenu = () => {
 
       if (itemsError) throw itemsError;
 
+      console.log('Room Service Menu Items:', items); // Debug log
+      console.log('Items count:', items?.length); // Debug log
+      console.log('Items with room_service_only = true:', items?.filter(item => item.room_service_only)); // Debug log
+
       const formattedItems: MenuItem[] = items?.map(item => {
         // Calculate if discount is currently active
         const now = new Date();

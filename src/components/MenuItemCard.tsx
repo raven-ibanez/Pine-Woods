@@ -5,6 +5,7 @@ import { MenuItem, Variation, AddOn } from '../types';
 interface MenuItemCardProps {
   item: MenuItem;
   onAddToCart: (item: MenuItem, quantity?: number, variation?: Variation, addOns?: AddOn[]) => void;
+  onBookNow?: (item: MenuItem) => void;
   quantity: number;
   onUpdateQuantity: (id: string, quantity: number) => void;
 }
@@ -12,6 +13,7 @@ interface MenuItemCardProps {
 const MenuItemCard: React.FC<MenuItemCardProps> = ({ 
   item, 
   onAddToCart, 
+  onBookNow,
   quantity, 
   onUpdateQuantity 
 }) => {
@@ -197,10 +199,22 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
                 </button>
               ) : quantity === 0 ? (
                 <button
-                  onClick={handleAddToCart}
+                  onClick={() => {
+                    // Check if this is a room item (room-rates or additional-services category)
+                    if ((item.category === 'room-rates' || item.category === 'additional-services') && onBookNow) {
+                      onBookNow(item);
+                    } else {
+                      handleAddToCart();
+                    }
+                  }}
                   className="bg-gradient-to-r from-pine-forest to-pine-sage text-white px-6 py-2.5 rounded-xl hover:from-pine-sage hover:to-pine-moss transition-all duration-200 transform hover:scale-105 font-medium text-sm shadow-lg hover:shadow-xl"
                 >
-                  {item.variations?.length || item.addOns?.length ? 'Customize' : 'Add to Cart'}
+                  {item.category === 'room-rates' || item.category === 'additional-services' 
+                    ? 'Book Now' 
+                    : item.variations?.length || item.addOns?.length 
+                      ? 'Customize' 
+                      : 'Add to Cart'
+                  }
                 </button>
               ) : (
                 <div className="flex items-center space-x-2 bg-gradient-to-r from-pine-cream to-pine-sand rounded-xl p-1 border border-pine-stone">

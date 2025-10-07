@@ -17,11 +17,12 @@ const preloadImages = (items: MenuItem[]) => {
 interface MenuProps {
   menuItems: MenuItem[];
   addToCart: (item: MenuItem, quantity?: number, variation?: any, addOns?: any[]) => void;
+  onBookNow?: (item: MenuItem) => void;
   cartItems: CartItem[];
   updateQuantity: (id: string, quantity: number) => void;
 }
 
-const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, cartItems, updateQuantity }) => {
+const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, onBookNow, cartItems, updateQuantity }) => {
   const { categories } = useCategories();
   const [activeCategory, setActiveCategory] = React.useState('hot-coffee');
 
@@ -120,6 +121,7 @@ const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, cartItems, updateQuan
                     key={item.id}
                     item={item}
                     onAddToCart={addToCart}
+                    onBookNow={onBookNow}
                     quantity={cartItem?.quantity || 0}
                     onUpdateQuantity={updateQuantity}
                   />

@@ -12,6 +12,7 @@ import AdminDashboard from './components/AdminDashboard';
 import RoomKeywordAccess from './components/RoomKeywordAccess';
 import RoomOrderCart from './components/RoomOrderCart';
 import RoomServiceSubNav from './components/RoomServiceSubNav';
+import BookingCalendar from './components/BookingCalendar';
 import { useMenu } from './hooks/useMenu';
 import { useRoomServiceMenu } from './hooks/useRoomServiceMenu';
 import { useRoomServiceCategories } from './hooks/useRoomServiceCategories';
@@ -25,6 +26,8 @@ function MainApp() {
   const [currentView, setCurrentView] = React.useState<'menu' | 'cart' | 'checkout' | 'room-service'>('menu');
   const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
   const [showRoomService, setShowRoomService] = React.useState(false);
+  const [showBookingCalendar, setShowBookingCalendar] = React.useState(false);
+  const [selectedRoomForBooking, setSelectedRoomForBooking] = React.useState<MenuItem | null>(null);
 
   const handleViewChange = (view: 'menu' | 'cart' | 'checkout' | 'room-service') => {
     setCurrentView(view);
@@ -61,6 +64,17 @@ function MainApp() {
     }
   };
 
+  const handleBookNow = (item: MenuItem) => {
+    setSelectedRoomForBooking(item);
+    setShowBookingCalendar(true);
+  };
+
+  const handleBookingComplete = (checkIn: Date, checkOut: Date, totalNights: number, totalAmount: number) => {
+    alert(`Booking confirmed! Check-in: ${checkIn.toLocaleDateString()}, Check-out: ${checkOut.toLocaleDateString()}, Total: ₱${totalAmount.toFixed(2)}`);
+    setShowBookingCalendar(false);
+    setSelectedRoomForBooking(null);
+  };
+
   const handleCategoryClick = (categoryId: string) => {
     setSelectedCategory(categoryId);
   };
@@ -74,6 +88,13 @@ function MainApp() {
   const filteredRoomServiceMenuItems = selectedCategory === 'all' 
     ? roomServiceMenuItems 
     : roomServiceMenuItems.filter(item => item.category === selectedCategory);
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('Room Service Menu Items:', roomServiceMenuItems);
+    console.log('Filtered Room Service Menu Items:', filteredRoomServiceMenuItems);
+    console.log('Selected Category:', selectedCategory);
+  }, [roomServiceMenuItems, filteredRoomServiceMenuItems, selectedCategory]);
 
   return (
     <div className="min-h-screen bg-pine-cream font-natural">
@@ -89,6 +110,7 @@ function MainApp() {
         <Menu 
           menuItems={filteredMenuItems}
           addToCart={cart.addToCart}
+          onBookNow={handleBookNow}
           cartItems={cart.cartItems}
           updateQuantity={cart.updateQuantity}
         />
@@ -150,6 +172,7 @@ function MainApp() {
                   <Menu 
                     menuItems={filteredRoomServiceMenuItems}
                     addToCart={handleAddToRoomOrder}
+                    onBookNow={handleBookNow}
                     cartItems={[]}
                     updateQuantity={() => {}}
                   />
@@ -191,6 +214,20 @@ function MainApp() {
         <FloatingCartButton 
           itemCount={cart.getTotalItems()}
           onCartClick={() => handleViewChange('cart')}
+        />
+      )}
+
+      {/* Booking Calendar Modal */}
+      {showBookingCalendar && selectedRoomForBooking && (
+        <BookingCalendar
+          roomId={selectedRoomForBooking.id}
+          roomName={selectedRoomForBooking.name}
+          basePrice={selectedRoomForBooking.basePrice}
+          onDateSelect={handleBookingComplete}
+          onClose={() => {
+            setShowBookingCalendar(false);
+            setSelectedRoomForBooking(null);
+          }}
         />
       )}
     </div>
