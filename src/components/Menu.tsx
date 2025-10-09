@@ -16,13 +16,10 @@ const preloadImages = (items: MenuItem[]) => {
 
 interface MenuProps {
   menuItems: MenuItem[];
-  addToCart: (item: MenuItem, quantity?: number, variation?: any, addOns?: any[]) => void;
-  onBookNow?: (item: MenuItem) => void;
-  cartItems: CartItem[];
-  updateQuantity: (id: string, quantity: number) => void;
+  onBookNow: (item: MenuItem, quantity?: number, variation?: any, addOns?: any[]) => void;
 }
 
-const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, onBookNow, cartItems, updateQuantity }) => {
+const Menu: React.FC<MenuProps> = ({ menuItems, onBookNow }) => {
   const { categories } = useCategories();
   const [activeCategory, setActiveCategory] = React.useState('hot-coffee');
 
@@ -62,6 +59,7 @@ const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, onBookNow, cartItems,
       // Set default to dim-sum if it exists, otherwise first category
       const defaultCategory = categories.find(cat => cat.id === 'dim-sum') || categories[0];
       if (!categories.find(cat => cat.id === activeCategory)) {
+        console.log('Setting default category to:', defaultCategory.id);
         setActiveCategory(defaultCategory.id);
       }
     }
@@ -86,6 +84,16 @@ const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, onBookNow, cartItems,
   }, []);
 
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('Menu Debug Info:');
+    console.log('- Menu Items:', menuItems);
+    console.log('- Categories:', categories);
+    console.log('- Active Category:', activeCategory);
+    console.log('- Menu Items Length:', menuItems.length);
+    console.log('- Categories Length:', categories.length);
+  }, [menuItems, categories, activeCategory]);
+
   return (
     <>
       <MobileNav 
@@ -104,6 +112,8 @@ const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, onBookNow, cartItems,
       {categories.map((category) => {
         const categoryItems = menuItems.filter(item => item.category === category.id);
         
+        console.log(`Category ${category.name} (${category.id}): ${categoryItems.length} items`);
+        
         if (categoryItems.length === 0) return null;
         
         return (
@@ -115,15 +125,11 @@ const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, onBookNow, cartItems,
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {categoryItems.map((item) => {
-                const cartItem = cartItems.find(cartItem => cartItem.id === item.id);
                 return (
                   <MenuItemCard
                     key={item.id}
                     item={item}
-                    onAddToCart={addToCart}
                     onBookNow={onBookNow}
-                    quantity={cartItem?.quantity || 0}
-                    onUpdateQuantity={updateQuantity}
                   />
                 );
               })}

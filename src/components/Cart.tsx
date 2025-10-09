@@ -21,6 +21,9 @@ const Cart: React.FC<CartProps> = ({
   onContinueShopping,
   onCheckout
 }) => {
+  console.log('Cart component - cartItems:', cartItems);
+  console.log('Cart component - cartItems.length:', cartItems.length);
+  
   if (cartItems.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12">

@@ -21,6 +21,7 @@ export interface MenuItem {
   image?: string;
   popular?: boolean;
   available?: boolean;
+  roomServiceOnly?: boolean;
   variations?: Variation[];
   addOns?: AddOn[];
   // Discount pricing fields
@@ -38,6 +39,46 @@ export interface CartItem extends MenuItem {
   selectedVariation?: Variation;
   selectedAddOns?: AddOn[];
   totalPrice: number;
+}
+
+export interface Room {
+  id: string;
+  name: string;
+  description: string;
+  room_type: string;
+  base_price: number;
+  max_guests: number;
+  amenities: string[];
+  image_url: string;
+  available: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlockedDate {
+  id: string;
+  room_id: string;
+  blocked_date: string;
+  reason: string;
+  blocked_by: string;
+  created_at: string;
+}
+
+export interface RoomBooking {
+  id: string;
+  room_id: string;
+  customer_name: string;
+  customer_email: string;
+  customer_contact: string;
+  check_in_date: string;
+  check_out_date: string;
+  total_price: number;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  payment_method?: string;
+  payment_reference?: string;
+  special_requests?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface OrderData {

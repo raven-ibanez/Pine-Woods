@@ -1,21 +1,15 @@
 import React, { useState } from 'react';
-import { Plus, Minus, X, ShoppingCart } from 'lucide-react';
+import { X } from 'lucide-react';
 import { MenuItem, Variation, AddOn } from '../types';
 
 interface MenuItemCardProps {
   item: MenuItem;
-  onAddToCart: (item: MenuItem, quantity?: number, variation?: Variation, addOns?: AddOn[]) => void;
-  onBookNow?: (item: MenuItem) => void;
-  quantity: number;
-  onUpdateQuantity: (id: string, quantity: number) => void;
+  onBookNow: (item: MenuItem, quantity?: number, variation?: Variation, addOns?: AddOn[]) => void;
 }
 
 const MenuItemCard: React.FC<MenuItemCardProps> = ({ 
   item, 
-  onAddToCart, 
-  onBookNow,
-  quantity, 
-  onUpdateQuantity 
+  onBookNow
 }) => {
   const [showCustomization, setShowCustomization] = useState(false);
   const [selectedVariation, setSelectedVariation] = useState<Variation | undefined>(
@@ -35,33 +29,24 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
     return price;
   };
 
-  const handleAddToCart = () => {
+  const handleBookNow = () => {
     if (item.variations?.length || item.addOns?.length) {
       setShowCustomization(true);
     } else {
-      onAddToCart(item, 1);
+      onBookNow(item, 1);
     }
   };
 
-  const handleCustomizedAddToCart = () => {
-    // Convert selectedAddOns back to regular AddOn array for cart
-    const addOnsForCart: AddOn[] = selectedAddOns.flatMap(addOn => 
+  const handleCustomizedBookNow = () => {
+    // Convert selectedAddOns back to regular AddOn array
+    const addOnsForBooking: AddOn[] = selectedAddOns.flatMap(addOn => 
       Array(addOn.quantity).fill({ ...addOn, quantity: undefined })
     );
-    onAddToCart(item, 1, selectedVariation, addOnsForCart);
+    onBookNow(item, 1, selectedVariation, addOnsForBooking);
     setShowCustomization(false);
     setSelectedAddOns([]);
   };
 
-  const handleIncrement = () => {
-    onUpdateQuantity(item.id, quantity + 1);
-  };
-
-  const handleDecrement = () => {
-    if (quantity > 0) {
-      onUpdateQuantity(item.id, quantity - 1);
-    }
-  };
 
   const updateAddOnQuantity = (addOn: AddOn, quantity: number) => {
     setSelectedAddOns(prev => {
@@ -197,41 +182,16 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
                 >
                   Unavailable
                 </button>
-              ) : quantity === 0 ? (
+              ) : (
                 <button
-                  onClick={() => {
-                    // Check if this is a room item (room-rates or additional-services category)
-                    if ((item.category === 'room-rates' || item.category === 'additional-services') && onBookNow) {
-                      onBookNow(item);
-                    } else {
-                      handleAddToCart();
-                    }
-                  }}
+                  onClick={handleBookNow}
                   className="bg-gradient-to-r from-pine-forest to-pine-sage text-white px-6 py-2.5 rounded-xl hover:from-pine-sage hover:to-pine-moss transition-all duration-200 transform hover:scale-105 font-medium text-sm shadow-lg hover:shadow-xl"
                 >
-                  {item.category === 'room-rates' || item.category === 'additional-services' 
-                    ? 'Book Now' 
-                    : item.variations?.length || item.addOns?.length 
-                      ? 'Customize' 
-                      : 'Add to Cart'
+                  {item.variations?.length || item.addOns?.length 
+                      ? 'Customize & Book' 
+                      : 'Book Now'
                   }
                 </button>
-              ) : (
-                <div className="flex items-center space-x-2 bg-gradient-to-r from-pine-cream to-pine-sand rounded-xl p-1 border border-pine-stone">
-                  <button
-                    onClick={handleDecrement}
-                    className="p-2 hover:bg-pine-sand rounded-lg transition-colors duration-200 hover:scale-110"
-                  >
-                    <Minus className="h-4 w-4 text-pine-forest" />
-                  </button>
-                  <span className="font-bold text-pine-forest min-w-[28px] text-center text-sm">{quantity}</span>
-                  <button
-                    onClick={handleIncrement}
-                    className="p-2 hover:bg-pine-sand rounded-lg transition-colors duration-200 hover:scale-110"
-                  >
-                    <Plus className="h-4 w-4 text-pine-forest" />
-                  </button>
-                </div>
               )}
             </div>
           </div>
@@ -374,11 +334,10 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
               </div>
 
               <button
-                onClick={handleCustomizedAddToCart}
+                onClick={handleCustomizedBookNow}
                 className="w-full bg-gradient-to-r from-pine-forest to-pine-sage text-white py-4 rounded-xl hover:from-pine-sage hover:to-pine-moss transition-all duration-200 font-semibold flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                <ShoppingCart className="h-5 w-5" />
-                <span>Add to Cart - ₱{calculatePrice().toFixed(2)}</span>
+                <span>Book Now - ₱{calculatePrice().toFixed(2)}</span>
               </button>
             </div>
           </div>

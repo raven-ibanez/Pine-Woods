@@ -1,16 +1,22 @@
 import React from 'react';
-import { ShoppingCart, Home } from 'lucide-react';
+import { Home, Utensils, ShoppingCart } from 'lucide-react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 
 interface HeaderProps {
-  cartItemsCount: number;
-  onCartClick: () => void;
   onMenuClick: () => void;
   onRoomServiceClick?: () => void;
+  onFoodMenuClick?: () => void;
+  onCartClick?: () => void;
+  cartItemCount?: number;
 }
 
-const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClick, onRoomServiceClick }) => {
+const Header: React.FC<HeaderProps> = ({ onMenuClick, onRoomServiceClick, onFoodMenuClick, onCartClick, cartItemCount = 0 }) => {
   const { siteSettings, loading } = useSiteSettings();
+  
+  // Force re-render when cart count changes
+  React.useEffect(() => {
+    console.log('Header - Cart item count changed to:', cartItemCount);
+  }, [cartItemCount]);
 
   return (
     <header className="sticky top-0 z-50 bg-pine-cream/90 backdrop-blur-md border-b border-pine-stone shadow-sm">
@@ -42,26 +48,38 @@ const Header: React.FC<HeaderProps> = ({ cartItemsCount, onCartClick, onMenuClic
           </button>
 
           <div className="flex items-center space-x-2">
+            {onCartClick && (
+              <button 
+                onClick={onCartClick}
+                className="relative flex items-center space-x-1 px-3 py-2 bg-pine-forest text-white hover:bg-pine-sage rounded-lg transition-all duration-200 transform hover:scale-105 shadow-sm"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                <span className="text-sm font-medium hidden sm:inline">Cart</span>
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-pine-sun text-pine-forest text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                    {cartItemCount}
+                  </span>
+                )}
+              </button>
+            )}
+            {onFoodMenuClick && (
+              <button 
+                onClick={onFoodMenuClick}
+                className="flex items-center space-x-1 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-sm"
+              >
+                <Utensils className="h-5 w-5" />
+                <span className="text-sm font-medium hidden sm:inline">Full Menu</span>
+              </button>
+            )}
             {onRoomServiceClick && (
               <button 
                 onClick={onRoomServiceClick}
                 className="flex items-center space-x-1 px-3 py-2 text-pine-bark hover:text-pine-forest hover:bg-pine-sand rounded-lg transition-all duration-200"
               >
                 <Home className="h-5 w-5" />
-                <span className="text-sm font-medium">Room Service</span>
+                <span className="text-sm font-medium hidden sm:inline">Room Service</span>
               </button>
             )}
-            <button 
-              onClick={onCartClick}
-              className="relative p-2 text-pine-bark hover:text-pine-forest hover:bg-pine-sand rounded-full transition-all duration-200"
-            >
-              <ShoppingCart className="h-6 w-6" />
-              {cartItemsCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-pine-forest text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-bounce-gentle">
-                  {cartItemsCount}
-                </span>
-              )}
-            </button>
           </div>
         </div>
       </div>

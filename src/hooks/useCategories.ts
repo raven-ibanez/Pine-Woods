@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { categories as localCategories } from '../data/menuData';
 
 export interface Category {
   id: string;
@@ -20,6 +21,27 @@ export const useCategories = () => {
     try {
       setLoading(true);
       
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseAnonKey) {
+        console.log('Supabase not configured, using local categories');
+        // Use local categories when Supabase is not configured
+        const formattedLocalCategories: Category[] = localCategories.map((cat, index) => ({
+          id: cat.id,
+          name: cat.name,
+          icon: cat.icon,
+          sort_order: index + 1,
+          active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+        setCategories(formattedLocalCategories);
+        setError(null);
+        return;
+      }
+      
       const { data, error: fetchError } = await supabase
         .from('categories')
         .select('*')
@@ -33,7 +55,19 @@ export const useCategories = () => {
       setError(null);
     } catch (err) {
       console.error('Error fetching categories:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch categories');
+      // Fallback to local categories on error
+      console.log('Falling back to local categories due to error');
+      const formattedLocalCategories: Category[] = localCategories.map((cat, index) => ({
+        id: cat.id,
+        name: cat.name,
+        icon: cat.icon,
+        sort_order: index + 1,
+        active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }));
+      setCategories(formattedLocalCategories);
+      setError(null);
     } finally {
       setLoading(false);
     }

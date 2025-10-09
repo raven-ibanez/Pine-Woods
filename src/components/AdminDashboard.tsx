@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Save, X, ArrowLeft, Coffee, TrendingUp, Package, Users, Lock, FolderOpen, CreditCard, Settings, Key, Calendar } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, ArrowLeft, Coffee, TrendingUp, Package, Users, Lock, FolderOpen, CreditCard, Settings, Calendar } from 'lucide-react';
 import { MenuItem, Variation, AddOn } from '../types';
 import { addOnCategories } from '../data/menuData';
 import { useMenu } from '../hooks/useMenu';
-import { useCategories, Category } from '../hooks/useCategories';
+import { useCategories } from '../hooks/useCategories';
 import ImageUpload from './ImageUpload';
 import CategoryManager from './CategoryManager';
 import PaymentMethodManager from './PaymentMethodManager';
 import SiteSettingsManager from './SiteSettingsManager';
-import AdminKeywordManager from './AdminKeywordManager';
-import AdminRoomAvailability from './AdminRoomAvailability';
+import RoomAvailabilityManager from './RoomAvailabilityManager';
+import RoomManager from './RoomManager';
+import FoodMenuManager from './FoodMenuManager';
 
 const AdminDashboard: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -19,7 +20,7 @@ const AdminDashboard: React.FC = () => {
   const [loginError, setLoginError] = useState('');
   const { menuItems, loading, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
   const { categories } = useCategories();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'items' | 'add' | 'edit' | 'categories' | 'payments' | 'settings' | 'keywords' | 'availability'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'items' | 'add' | 'edit' | 'categories' | 'payments' | 'settings' | 'room-availability' | 'room-management' | 'food-menu'>('dashboard');
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -35,20 +36,6 @@ const AdminDashboard: React.FC = () => {
     addOns: []
   });
 
-  const handleAddItem = () => {
-    setCurrentView('add');
-    const defaultCategory = categories.length > 0 ? categories[0].id : 'dim-sum';
-    setFormData({
-      name: '',
-      description: '',
-      basePrice: 0,
-      category: defaultCategory,
-      popular: false,
-      available: true,
-      variations: [],
-      addOns: []
-    });
-  };
 
   const handleEditItem = (item: MenuItem) => {
     setEditingItem(item);
@@ -234,7 +221,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'ClickEats@Admin!2025') {
+    if (password === 'PineWoods@Admin!2025') {
       setIsAuthenticated(true);
       localStorage.setItem('beracah_admin_auth', 'true');
       setLoginError('');
@@ -581,7 +568,7 @@ const AdminDashboard: React.FC = () => {
                   <ArrowLeft className="h-5 w-5" />
                   <span>Dashboard</span>
                 </button>
-                <h1 className="text-2xl font-playfair font-semibold text-black">Menu Items</h1>
+                <h1 className="text-2xl font-playfair font-semibold text-black">Room Management</h1>
               </div>
               <div className="flex items-center space-x-3">
                 {showBulkActions && (
@@ -597,13 +584,6 @@ const AdminDashboard: React.FC = () => {
                     </button>
                   </div>
                 )}
-                <button
-                  onClick={handleAddItem}
-                  className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Add New Item</span>
-                </button>
               </div>
             </div>
           </div>
@@ -900,55 +880,6 @@ const AdminDashboard: React.FC = () => {
     return <PaymentMethodManager onBack={() => setCurrentView('dashboard')} />;
   }
 
-  // Keywords Management View
-  if (currentView === 'keywords') {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setCurrentView('dashboard')}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors duration-200"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                  <span>Dashboard</span>
-                </button>
-                <h1 className="text-2xl font-playfair font-semibold text-black">Room Keywords</h1>
-              </div>
-            </div>
-          </div>
-        </div>
-        <AdminKeywordManager />
-      </div>
-    );
-  }
-
-  // Room Availability Management View
-  if (currentView === 'availability') {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setCurrentView('dashboard')}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors duration-200"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                  <span>Dashboard</span>
-                </button>
-                <h1 className="text-2xl font-playfair font-semibold text-black">Room Availability</h1>
-              </div>
-            </div>
-          </div>
-        </div>
-        <AdminRoomAvailability />
-      </div>
-    );
-  }
 
   // Site Settings View
   if (currentView === 'settings') {
@@ -978,6 +909,21 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
+  // Room Availability View
+  if (currentView === 'room-availability') {
+    return <RoomAvailabilityManager onBack={() => setCurrentView('dashboard')} />;
+  }
+
+  // Room Management View
+  if (currentView === 'room-management') {
+    return <RoomManager onBack={() => setCurrentView('dashboard')} />;
+  }
+
+  // Food Menu Management View
+  if (currentView === 'food-menu') {
+    return <FoodMenuManager onBack={() => setCurrentView('dashboard')} />;
+  }
+
   // Dashboard View
   return (
     <div className="min-h-screen bg-gray-50">
@@ -986,7 +932,7 @@ const AdminDashboard: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <Coffee className="h-8 w-8 text-black" />
-              <h1 className="text-2xl font-noto font-semibold text-black">ClickEats Admin</h1>
+              <h1 className="text-2xl font-noto font-semibold text-black">Pine Woods Admin</h1>
             </div>
             <div className="flex items-center space-x-4">
               <a
@@ -1064,20 +1010,6 @@ const AdminDashboard: React.FC = () => {
             <h3 className="text-lg font-playfair font-medium text-black mb-4">Quick Actions</h3>
             <div className="space-y-3">
               <button
-                onClick={handleAddItem}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <Plus className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Add New Menu Item</span>
-              </button>
-              <button
-                onClick={() => setCurrentView('items')}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <Package className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Manage Menu Items</span>
-              </button>
-              <button
                 onClick={() => setCurrentView('categories')}
                 className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
               >
@@ -1092,18 +1024,25 @@ const AdminDashboard: React.FC = () => {
                 <span className="font-medium text-gray-900">Payment Methods</span>
               </button>
               <button
-                onClick={() => setCurrentView('keywords')}
+                onClick={() => setCurrentView('room-management')}
                 className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
               >
-                <Key className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Room Keywords</span>
+                <Package className="h-5 w-5 text-gray-400" />
+                <span className="font-medium text-gray-900">Room Management</span>
               </button>
               <button
-                onClick={() => setCurrentView('availability')}
+                onClick={() => setCurrentView('room-availability')}
                 className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
               >
                 <Calendar className="h-5 w-5 text-gray-400" />
                 <span className="font-medium text-gray-900">Room Availability</span>
+              </button>
+              <button
+                onClick={() => setCurrentView('food-menu')}
+                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
+              >
+                <Coffee className="h-5 w-5 text-gray-400" />
+                <span className="font-medium text-gray-900">Food Menu Manager</span>
               </button>
               <button
                 onClick={() => setCurrentView('settings')}

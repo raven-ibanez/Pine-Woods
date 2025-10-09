@@ -1,9 +1,32 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { CartItem, MenuItem, Variation, AddOn } from '../types';
 
+interface CartContextType {
+  cartItems: CartItem[];
+  addToCart: (item: MenuItem, quantity?: number, variation?: Variation, addOns?: AddOn[]) => void;
+  updateQuantity: (id: string, quantity: number) => void;
+  removeFromCart: (id: string) => void;
+  clearCart: () => void;
+  getTotalPrice: () => number;
+  getTotalItems: () => number;
+}
+
+const CartContext = createContext<CartContextType | undefined>(undefined);
+
 export const useCart = () => {
+  const context = useContext(CartContext);
+  if (context === undefined) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  return context;
+};
+
+interface CartProviderProps {
+  children: ReactNode;
+}
+
+export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-    // Initialize cart from localStorage if available
     try {
       const saved = localStorage.getItem('pine-woods-cart');
       return saved ? JSON.parse(saved) : [];
@@ -11,9 +34,8 @@ export const useCart = () => {
       return [];
     }
   });
-  const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Save cart to localStorage whenever it changes
+  // Save to localStorage whenever cart changes
   useEffect(() => {
     localStorage.setItem('pine-woods-cart', JSON.stringify(cartItems));
     console.log('Cart saved to localStorage:', cartItems);
@@ -32,11 +54,10 @@ export const useCart = () => {
     return price;
   };
 
-  const addToCart = useCallback((item: MenuItem, quantity: number = 1, variation?: Variation, addOns?: AddOn[]) => {
-    console.log('useCart.addToCart called with:', { item, quantity, variation, addOns });
+  const addToCart = (item: MenuItem, quantity: number = 1, variation?: Variation, addOns?: AddOn[]) => {
+    console.log('CartContext.addToCart called with:', { item, quantity, variation, addOns });
     
     const totalPrice = calculateItemPrice(item, variation, addOns);
-    console.log('Calculated total price:', totalPrice);
     
     // Group add-ons by name and sum their quantities
     const groupedAddOns = addOns?.reduce((groups, addOn) => {
@@ -83,15 +104,9 @@ export const useCart = () => {
         return newCart;
       }
     });
-    
-    // Force a re-render by updating localStorage immediately
-    setTimeout(() => {
-      const currentCart = JSON.parse(localStorage.getItem('pine-woods-cart') || '[]');
-      console.log('Cart state after update:', currentCart);
-    }, 100);
-  }, []);
+  };
 
-  const updateQuantity = useCallback((id: string, quantity: number) => {
+  const updateQuantity = (id: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(id);
       return;
@@ -102,39 +117,39 @@ export const useCart = () => {
         item.id === id ? { ...item, quantity } : item
       )
     );
-  }, []);
+  };
 
-  const removeFromCart = useCallback((id: string) => {
+  const removeFromCart = (id: string) => {
     setCartItems(prev => prev.filter(item => item.id !== id));
-  }, []);
+  };
 
-  const clearCart = useCallback(() => {
+  const clearCart = () => {
     setCartItems([]);
-  }, []);
+  };
 
-  const getTotalPrice = useCallback(() => {
+  const getTotalPrice = () => {
     return cartItems.reduce((total, item) => total + (item.totalPrice * item.quantity), 0);
-  }, [cartItems]);
+  };
 
-  const getTotalItems = useCallback(() => {
+  const getTotalItems = () => {
     const total = cartItems.reduce((total, item) => total + item.quantity, 0);
     console.log('getTotalItems called, returning:', total);
     return total;
-  }, [cartItems]);
+  };
 
-  const openCart = useCallback(() => setIsCartOpen(true), []);
-  const closeCart = useCallback(() => setIsCartOpen(false), []);
-
-  return {
+  const value: CartContextType = {
     cartItems,
-    isCartOpen,
     addToCart,
     updateQuantity,
     removeFromCart,
     clearCart,
     getTotalPrice,
     getTotalItems,
-    openCart,
-    closeCart
   };
+
+  return (
+    <CartContext.Provider value={value}>
+      {children}
+    </CartContext.Provider>
+  );
 };

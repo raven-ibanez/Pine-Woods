@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { MenuItem } from '../types';
+import { menuData } from '../data/menuData';
 
 export const useMenu = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -10,6 +11,26 @@ export const useMenu = () => {
   const fetchMenuItems = async () => {
     try {
       setLoading(true);
+      
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseAnonKey) {
+        console.log('Supabase not configured, using local data');
+        // Use local data when Supabase is not configured
+        const localItems: MenuItem[] = menuData.map(item => ({
+          ...item,
+          available: true,
+          effectivePrice: item.basePrice,
+          isOnDiscount: false,
+          variations: item.variations || [],
+          addOns: item.addOns || []
+        }));
+        setMenuItems(localItems);
+        setError(null);
+        return;
+      }
       
       // Fetch menu items with their variations and add-ons (exclude room service only items)
       const { data: items, error: itemsError } = await supabase
@@ -70,7 +91,18 @@ export const useMenu = () => {
       setError(null);
     } catch (err) {
       console.error('Error fetching menu items:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch menu items');
+      // Fallback to local data on error
+      console.log('Falling back to local data due to error');
+      const localItems: MenuItem[] = menuData.map(item => ({
+        ...item,
+        available: true,
+        effectivePrice: item.basePrice,
+        isOnDiscount: false,
+        variations: item.variations || [],
+        addOns: item.addOns || []
+      }));
+      setMenuItems(localItems);
+      setError(null);
     } finally {
       setLoading(false);
     }

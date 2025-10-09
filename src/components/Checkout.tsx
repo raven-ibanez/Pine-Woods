@@ -1,30 +1,45 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Clock } from 'lucide-react';
-import { CartItem, PaymentMethod, ServiceType } from '../types';
+import { ArrowLeft } from 'lucide-react';
+import { CartItem, PaymentMethod } from '../types';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
+import { useRooms } from '../hooks/useRooms';
+import CustomCalendar from './CustomCalendar';
 
 interface CheckoutProps {
   cartItems: CartItem[];
   totalPrice: number;
   onBack: () => void;
+  onSuccess?: () => void;
 }
 
-const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) => {
+interface BookingDetails {
+  customerName: string;
+  email: string;
+  contactNumber: string;
+  selectedDate: string;
+  selectedEndDate?: string;
+  paymentMethod: PaymentMethod;
+  referenceNumber?: string;
+}
+
+const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack, onSuccess }) => {
   const { paymentMethods } = usePaymentMethods();
-  const [step, setStep] = useState<'details' | 'payment'>('details');
-  const [customerName, setCustomerName] = useState('');
-  const [contactNumber, setContactNumber] = useState('');
-  const [serviceType, setServiceType] = useState<ServiceType>('dine-in');
-  const [address, setAddress] = useState('');
-  const [landmark, setLandmark] = useState('');
-  const [pickupTime, setPickupTime] = useState('5-10');
-  const [customTime, setCustomTime] = useState('');
-  // Dine-in specific state
-  const [partySize, setPartySize] = useState(1);
-  const [dineInTime, setDineInTime] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash');
-  const [referenceNumber, setReferenceNumber] = useState('');
-  const [notes, setNotes] = useState('');
+  const { getBlockedDatesForRoom } = useRooms();
+  
+  // Check if this is a food order (not room booking)
+  const isFoodOrder = cartItems.length > 0 && cartItems[0].category !== 'room-rates';
+  
+  // Skip calendar step for food orders, start with details
+  const [step, setStep] = useState<'calendar' | 'details' | 'payment'>(isFoodOrder ? 'details' : 'calendar');
+  const [bookingDetails, setBookingDetails] = useState<BookingDetails>({
+    customerName: '',
+    email: '',
+    contactNumber: '',
+    selectedDate: isFoodOrder ? new Date().toISOString().split('T')[0] : '', // Set today's date for food orders
+    selectedEndDate: '',
+    paymentMethod: 'gcash',
+    referenceNumber: ''
+  });
 
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -32,45 +47,49 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
 
   // Set default payment method when payment methods are loaded
   React.useEffect(() => {
-    if (paymentMethods.length > 0 && !paymentMethod) {
-      setPaymentMethod(paymentMethods[0].id as PaymentMethod);
+    if (paymentMethods.length > 0 && !bookingDetails.paymentMethod) {
+      setBookingDetails(prev => ({
+        ...prev,
+        paymentMethod: paymentMethods[0].id as PaymentMethod
+      }));
     }
-  }, [paymentMethods, paymentMethod]);
+  }, [paymentMethods, bookingDetails.paymentMethod]);
 
-  const selectedPaymentMethod = paymentMethods.find(method => method.id === paymentMethod);
+  const selectedPaymentMethod = paymentMethods.find(method => method.id === bookingDetails.paymentMethod);
+  
+  // Get blocked dates for the room being booked (if it's a room booking)
+  const isRoomBooking = cartItems.length > 0 && cartItems[0].category === 'room-rates';
+  const roomId = isRoomBooking ? cartItems[0].id : null;
+  const blockedDates = roomId ? getBlockedDatesForRoom(roomId) : [];
+
+  const handleProceedToDetails = () => {
+    setStep('details');
+  };
 
   const handleProceedToPayment = () => {
     setStep('payment');
   };
 
-  const handlePlaceOrder = () => {
-    const timeInfo = serviceType === 'pickup' 
-      ? (pickupTime === 'custom' ? customTime : `${pickupTime} minutes`)
-      : '';
-    
-    const dineInInfo = serviceType === 'dine-in' 
-      ? `👥 Party Size: ${partySize} person${partySize !== 1 ? 's' : ''}\n🕐 Preferred Time: ${new Date(dineInTime).toLocaleString('en-US', { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric', 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        })}`
-      : '';
-    
-    const orderDetails = `
-🛒 ClickEats ORDER
+  const handlePlaceBooking = () => {
+    const bookingDetailsText = `
+🏕️ PINE WOODS CAMPSITE BOOKING
 
-👤 Customer: ${customerName}
-📞 Contact: ${contactNumber}
-📍 Service: ${serviceType.charAt(0).toUpperCase() + serviceType.slice(1)}
-${serviceType === 'delivery' ? `🏠 Address: ${address}${landmark ? `\n🗺️ Landmark: ${landmark}` : ''}` : ''}
-${serviceType === 'pickup' ? `⏰ Pickup Time: ${timeInfo}` : ''}
-${serviceType === 'dine-in' ? dineInInfo : ''}
+👤 Customer: ${bookingDetails.customerName}
+📧 Email: ${bookingDetails.email}
+📞 Contact: ${bookingDetails.contactNumber}
+📅 Dates: ${new Date(bookingDetails.selectedDate).toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  })}${bookingDetails.selectedEndDate ? ` to ${new Date(bookingDetails.selectedEndDate).toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  })}` : ''}
 
-
-📋 ORDER DETAILS:
+📋 BOOKING DETAILS:
 ${cartItems.map(item => {
   let itemDetails = `• ${item.name}`;
   if (item.selectedVariation) {
@@ -87,30 +106,49 @@ ${cartItems.map(item => {
   return itemDetails;
 }).join('\n')}
 
-💰 TOTAL: ₱${totalPrice}
-${serviceType === 'delivery' ? `🛵 DELIVERY FEE:` : ''}
+💰 TOTAL: ₱${totalPriceWithDays}${numberOfDays > 1 ? ` (${numberOfDays} days × ₱${totalPrice})` : ''}
 
-💳 Payment: ${selectedPaymentMethod?.name || paymentMethod}
+💳 Payment: ${selectedPaymentMethod?.name || bookingDetails.paymentMethod}
 📸 Payment Screenshot: Please attach your payment receipt screenshot
 
-${notes ? `📝 Notes: ${notes}` : ''}
-
-Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
+Please confirm this booking to proceed. Thank you for choosing Pine Woods Campsite! 🏕️
     `.trim();
 
-    const encodedMessage = encodeURIComponent(orderDetails);
-    const messengerUrl = `https://m.me/61579693577478?text=${encodedMessage}`;
+    const encodedMessage = encodeURIComponent(bookingDetailsText);
+    const messengerUrl = `https://m.me/109895820635462?text=${encodedMessage}`;
     
     window.open(messengerUrl, '_blank');
     
+    // Call success callback after opening messenger
+    if (onSuccess) {
+      setTimeout(() => {
+        onSuccess();
+      }, 1000);
+    }
   };
 
-  const isDetailsValid = customerName && contactNumber && 
-    (serviceType !== 'delivery' || address) && 
-    (serviceType !== 'pickup' || (pickupTime !== 'custom' || customTime)) &&
-    (serviceType !== 'dine-in' || (partySize > 0 && dineInTime));
+  const isCalendarValid = isFoodOrder ? true : bookingDetails.selectedDate; // Skip date validation for food orders
+  
+  // Calculate number of days for pricing
+  const calculateNumberOfDays = () => {
+    if (!bookingDetails.selectedDate) return 1;
+    if (!bookingDetails.selectedEndDate) return 1;
+    
+    const startDate = new Date(bookingDetails.selectedDate);
+    const endDate = new Date(bookingDetails.selectedEndDate);
+    const timeDiff = endDate.getTime() - startDate.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1;
+    
+    return daysDiff;
+  };
+  
+  const numberOfDays = calculateNumberOfDays();
+  const totalPriceWithDays = totalPrice * numberOfDays;
+  
+  const isDetailsValid = bookingDetails.customerName && bookingDetails.email && bookingDetails.contactNumber;
 
-  if (step === 'details') {
+  // Calendar Step
+  if (step === 'calendar') {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center mb-8">
@@ -119,15 +157,15 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
             className="flex items-center space-x-2 text-pine-bark hover:text-pine-forest transition-colors duration-200"
           >
             <ArrowLeft className="h-5 w-5" />
-            <span>Back to Cart</span>
+            <span>Back to Menu</span>
           </button>
-          <h1 className="text-3xl font-rustic font-semibold text-pine-forest ml-8">Order Details</h1>
+          <h1 className="text-3xl font-rustic font-semibold text-pine-forest ml-8">Select Date</h1>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Order Summary */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          {/* Booking Summary */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-2xl font-rustic font-medium text-pine-forest mb-6">Order Summary</h2>
+            <h2 className="text-2xl font-rustic font-medium text-pine-forest mb-6">Booking Summary</h2>
             
             <div className="space-y-4 mb-6">
               {cartItems.map((item) => (
@@ -150,189 +188,208 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
             </div>
             
             <div className="border-t border-red-200 pt-4">
+              {numberOfDays > 1 && (
+                <div className="flex items-center justify-between text-sm text-pine-bark mb-2">
+                  <span>Base Price:</span>
+                  <span>₱{totalPrice}</span>
+                </div>
+              )}
+              {numberOfDays > 1 && (
+                <div className="flex items-center justify-between text-sm text-pine-bark mb-2">
+                  <span>Number of Days:</span>
+                  <span>{numberOfDays} day{numberOfDays !== 1 ? 's' : ''}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between text-2xl font-noto font-semibold text-black">
                 <span>Total:</span>
-                <span>₱{totalPrice}</span>
+                <span>₱{totalPriceWithDays}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Date Selection */}
+          <div className="space-y-6">
+            {/* Custom Calendar */}
+            <div>
+              <h2 className="text-2xl font-rustic font-medium text-pine-forest mb-4">Select Date</h2>
+              <CustomCalendar
+                selectedDate={bookingDetails.selectedDate}
+                selectedEndDate={bookingDetails.selectedEndDate}
+                onDateSelect={(startDate, endDate) => setBookingDetails(prev => ({ 
+                  ...prev, 
+                  selectedDate: startDate, 
+                  selectedEndDate: endDate 
+                }))}
+                blockedDates={blockedDates}
+              />
+            </div>
+
+            {/* Continue Button */}
+            <button
+              onClick={handleProceedToDetails}
+              disabled={!isCalendarValid}
+              className={`w-full py-4 rounded-xl font-medium text-lg transition-all duration-200 transform ${
+                isCalendarValid
+                  ? 'bg-pine-forest text-white hover:bg-pine-sage hover:scale-[1.02] shadow-lg'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Continue to Customer Details
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Customer Details Step
+  if (step === 'details') {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="flex items-center mb-8">
+          <button
+            onClick={() => setStep('calendar')}
+            className="flex items-center space-x-2 text-pine-bark hover:text-pine-forest transition-colors duration-200"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span>Back to Date Selection</span>
+          </button>
+          <h1 className="text-3xl font-rustic font-semibold text-pine-forest ml-8">Customer Information</h1>
+          <div className="ml-8 mt-2">
+            <p className="text-pine-bark text-sm">👤 Please fill in your details below</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Booking Summary */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-2xl font-rustic font-medium text-pine-forest mb-6">Booking Summary</h2>
+            
+            {/* Selected Date Range */}
+            <div className="bg-pine-sand rounded-lg p-4 mb-6">
+              <h4 className="font-medium text-pine-forest mb-2">Selected Dates</h4>
+              {bookingDetails.selectedDate ? (
+                <div className="text-sm text-pine-bark">
+                  <p>
+                    📅 Start: {new Date(bookingDetails.selectedDate).toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                  {bookingDetails.selectedEndDate && (
+                    <p>
+                      📅 End: {new Date(bookingDetails.selectedEndDate).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </p>
+                  )}
+                  {bookingDetails.selectedEndDate && (
+                    <p className="text-xs text-pine-forest mt-1">
+                      Duration: {Math.ceil((new Date(bookingDetails.selectedEndDate).getTime() - new Date(bookingDetails.selectedDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} day(s)
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-pine-bark">No dates selected</p>
+              )}
+            </div>
+            
+            <div className="space-y-4 mb-6">
+              {cartItems.map((item) => (
+                <div key={item.id} className="flex items-center justify-between py-2 border-b border-pine-stone">
+                  <div>
+                    <h4 className="font-medium text-pine-forest">{item.name}</h4>
+                    {item.selectedVariation && (
+                      <p className="text-sm text-gray-600">Size: {item.selectedVariation.name}</p>
+                    )}
+                    {item.selectedAddOns && item.selectedAddOns.length > 0 && (
+                      <p className="text-sm text-gray-600">
+                        Add-ons: {item.selectedAddOns.map(addOn => addOn.name).join(', ')}
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-600">₱{item.totalPrice} x {item.quantity}</p>
+                  </div>
+                  <span className="font-semibold text-black">₱{item.totalPrice * item.quantity}</span>
+                </div>
+              ))}
+            </div>
+            
+            <div className="border-t border-red-200 pt-4">
+              {numberOfDays > 1 && (
+                <div className="flex items-center justify-between text-sm text-pine-bark mb-2">
+                  <span>Base Price:</span>
+                  <span>₱{totalPrice}</span>
+                </div>
+              )}
+              {numberOfDays > 1 && (
+                <div className="flex items-center justify-between text-sm text-pine-bark mb-2">
+                  <span>Number of Days:</span>
+                  <span>{numberOfDays} day{numberOfDays !== 1 ? 's' : ''}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between text-2xl font-noto font-semibold text-black">
+                <span>Total:</span>
+                <span>₱{totalPriceWithDays}</span>
               </div>
             </div>
           </div>
 
           {/* Customer Details Form */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-2xl font-noto font-medium text-black mb-6">Customer Information</h2>
+            <h2 className="text-2xl font-rustic font-medium text-pine-forest mb-6">Customer Information</h2>
             
             <form className="space-y-6">
               {/* Customer Information */}
-              <div>
-                <label className="block text-sm font-medium text-black mb-2">Full Name *</label>
-                <input
-                  type="text"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-black mb-2">Contact Number *</label>
-                <input
-                  type="tel"
-                  value={contactNumber}
-                  onChange={(e) => setContactNumber(e.target.value)}
-                  className="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                  placeholder="09XX XXX XXXX"
-                  required
-                />
-              </div>
-
-              {/* Service Type */}
-              <div>
-                <label className="block text-sm font-medium text-black mb-3">Service Type *</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { value: 'dine-in', label: 'Dine In', icon: '🪑' },
-                    { value: 'pickup', label: 'Pickup', icon: '🚶' },
-                    { value: 'delivery', label: 'Delivery', icon: '🛵' }
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setServiceType(option.value as ServiceType)}
-                      className={`p-4 rounded-lg border-2 transition-all duration-200 ${
-                        serviceType === option.value
-                          ? 'border-pine-forest bg-pine-forest text-white'
-                          : 'border-red-300 bg-white text-gray-700 hover:border-red-400'
-                      }`}
-                    >
-                      <div className="text-2xl mb-1">{option.icon}</div>
-                      <div className="text-sm font-medium">{option.label}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Dine-in Details */}
-              {serviceType === 'dine-in' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-black mb-2">Party Size *</label>
-                    <div className="flex items-center space-x-4">
-                      <button
-                        type="button"
-                        onClick={() => setPartySize(Math.max(1, partySize - 1))}
-                        className="w-10 h-10 rounded-lg border-2 border-red-300 flex items-center justify-center text-red-600 hover:border-red-400 hover:bg-red-50 transition-all duration-200"
-                      >
-                        -
-                      </button>
-                      <span className="text-2xl font-semibold text-black min-w-[3rem] text-center">{partySize}</span>
-                      <button
-                        type="button"
-                        onClick={() => setPartySize(Math.min(20, partySize + 1))}
-                        className="w-10 h-10 rounded-lg border-2 border-red-300 flex items-center justify-center text-red-600 hover:border-red-400 hover:bg-red-50 transition-all duration-200"
-                      >
-                        +
-                      </button>
-                      <span className="text-sm text-gray-600 ml-2">person{partySize !== 1 ? 's' : ''}</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-black mb-2">Preferred Time *</label>
-                    <input
-                      type="datetime-local"
-                      value={dineInTime}
-                      onChange={(e) => setDineInTime(e.target.value)}
-                      className="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                      required
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Please select your preferred dining time</p>
-                  </div>
-                </>
-              )}
-
-              {/* Pickup Time Selection */}
-              {serviceType === 'pickup' && (
+              <div className="bg-pine-sand rounded-lg p-4 mb-4">
+                <h3 className="text-lg font-rustic font-medium text-pine-forest mb-3">👤 Personal Information</h3>
                 <div>
-                  <label className="block text-sm font-medium text-black mb-3">Pickup Time *</label>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { value: '5-10', label: '5-10 minutes' },
-                        { value: '15-20', label: '15-20 minutes' },
-                        { value: '25-30', label: '25-30 minutes' },
-                        { value: 'custom', label: 'Custom Time' }
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setPickupTime(option.value)}
-                          className={`p-3 rounded-lg border-2 transition-all duration-200 text-sm ${
-                            pickupTime === option.value
-                              ? 'border-pine-forest bg-pine-forest text-white'
-                              : 'border-red-300 bg-white text-gray-700 hover:border-red-400'
-                          }`}
-                        >
-                          <Clock className="h-4 w-4 mx-auto mb-1" />
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                    
-                    {pickupTime === 'custom' && (
-                      <input
-                        type="text"
-                        value={customTime}
-                        onChange={(e) => setCustomTime(e.target.value)}
-                        className="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                        placeholder="e.g., 45 minutes, 1 hour, 2:30 PM"
-                        required
-                      />
-                    )}
-                  </div>
+                  <label className="block text-sm font-medium text-pine-forest mb-2">Full Name *</label>
+                  <input
+                    type="text"
+                    value={bookingDetails.customerName}
+                    onChange={(e) => setBookingDetails(prev => ({ ...prev, customerName: e.target.value }))}
+                    className="w-full px-4 py-3 border border-pine-stone rounded-lg focus:ring-2 focus:ring-pine-forest focus:border-transparent transition-all duration-200 bg-white"
+                    placeholder="Enter your full name"
+                    required
+                  />
                 </div>
-              )}
+              </div>
 
-              {/* Delivery Address */}
-              {serviceType === 'delivery' && (
-                <>
+              <div className="bg-pine-sand rounded-lg p-4 mb-4">
+                <h3 className="text-lg font-rustic font-medium text-pine-forest mb-3">📧 Contact Information</h3>
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-black mb-2">Delivery Address *</label>
-                    <textarea
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      className="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                      placeholder="Enter your complete delivery address"
-                      rows={3}
+                    <label className="block text-sm font-medium text-pine-forest mb-2">Email Address *</label>
+                    <input
+                      type="email"
+                      value={bookingDetails.email}
+                      onChange={(e) => setBookingDetails(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-4 py-3 border border-pine-stone rounded-lg focus:ring-2 focus:ring-pine-forest focus:border-transparent transition-all duration-200 bg-white"
+                      placeholder="Enter your email address"
                       required
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium text-black mb-2">Landmark</label>
+                    <label className="block text-sm font-medium text-pine-forest mb-2">Contact Number *</label>
                     <input
-                      type="text"
-                      value={landmark}
-                      onChange={(e) => setLandmark(e.target.value)}
-                      className="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                      placeholder="e.g., Near McDonald's, Beside 7-Eleven, In front of school"
+                      type="tel"
+                      value={bookingDetails.contactNumber}
+                      onChange={(e) => setBookingDetails(prev => ({ ...prev, contactNumber: e.target.value }))}
+                      className="w-full px-4 py-3 border border-pine-stone rounded-lg focus:ring-2 focus:ring-pine-forest focus:border-transparent transition-all duration-200 bg-white"
+                      placeholder="09XX XXX XXXX"
+                      required
                     />
                   </div>
-                </>
-              )}
-
-              {/* Special Notes */}
-              <div>
-                <label className="block text-sm font-medium text-black mb-2">Special Instructions</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Any special requests or notes..."
-                  rows={3}
-                />
+                </div>
               </div>
+
+
 
               <button
                 onClick={handleProceedToPayment}
@@ -358,29 +415,29 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
       <div className="flex items-center mb-8">
         <button
           onClick={() => setStep('details')}
-          className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors duration-200"
+          className="flex items-center space-x-2 text-pine-bark hover:text-pine-forest transition-colors duration-200"
         >
           <ArrowLeft className="h-5 w-5" />
-          <span>Back to Details</span>
+          <span>Back to Customer Details</span>
         </button>
-        <h1 className="text-3xl font-noto font-semibold text-black ml-8">Payment</h1>
+        <h1 className="text-3xl font-rustic font-semibold text-pine-forest ml-8">Payment</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Payment Method Selection */}
         <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-2xl font-noto font-medium text-black mb-6">Choose Payment Method</h2>
+          <h2 className="text-2xl font-rustic font-medium text-pine-forest mb-6">Choose Payment Method</h2>
           
           <div className="grid grid-cols-1 gap-4 mb-6">
             {paymentMethods.map((method) => (
               <button
                 key={method.id}
                 type="button"
-                onClick={() => setPaymentMethod(method.id as PaymentMethod)}
+                onClick={() => setBookingDetails(prev => ({ ...prev, paymentMethod: method.id as PaymentMethod }))}
                 className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center space-x-3 ${
-                  paymentMethod === method.id
+                  bookingDetails.paymentMethod === method.id
                     ? 'border-pine-forest bg-pine-forest text-white'
-                    : 'border-red-300 bg-white text-gray-700 hover:border-red-400'
+                    : 'border-pine-stone bg-white text-pine-bark hover:border-pine-forest'
                 }`}
               >
                 <span className="text-2xl">💳</span>
@@ -391,8 +448,8 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
 
           {/* Payment Details with QR Code */}
           {selectedPaymentMethod && (
-            <div className="bg-red-50 rounded-lg p-6 mb-6">
-              <h3 className="font-medium text-black mb-4">Payment Details</h3>
+            <div className="bg-pine-sand rounded-lg p-6 mb-6">
+              <h3 className="font-medium text-pine-forest mb-4">Payment Details</h3>
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex-1">
                   <p className="text-sm text-gray-600 mb-1">{selectedPaymentMethod.name}</p>
@@ -424,44 +481,29 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
           </div>
         </div>
 
-        {/* Order Summary */}
+        {/* Booking Summary */}
         <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-2xl font-noto font-medium text-black mb-6">Final Order Summary</h2>
+          <h2 className="text-2xl font-rustic font-medium text-pine-forest mb-6">Final Booking Summary</h2>
           
           <div className="space-y-4 mb-6">
-            <div className="bg-red-50 rounded-lg p-4">
-              <h4 className="font-medium text-black mb-2">Customer Details</h4>
-              <p className="text-sm text-gray-600">Name: {customerName}</p>
-              <p className="text-sm text-gray-600">Contact: {contactNumber}</p>
-              <p className="text-sm text-gray-600">Service: {serviceType.charAt(0).toUpperCase() + serviceType.slice(1)}</p>
-              {serviceType === 'delivery' && (
-                <>
-                  <p className="text-sm text-gray-600">Address: {address}</p>
-                  {landmark && <p className="text-sm text-gray-600">Landmark: {landmark}</p>}
-                </>
-              )}
-              {serviceType === 'pickup' && (
-                <p className="text-sm text-gray-600">
-                  Pickup Time: {pickupTime === 'custom' ? customTime : `${pickupTime} minutes`}
-                </p>
-              )}
-              {serviceType === 'dine-in' && (
-                <>
-                  <p className="text-sm text-gray-600">
-                    Party Size: {partySize} person{partySize !== 1 ? 's' : ''}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Preferred Time: {dineInTime ? new Date(dineInTime).toLocaleString('en-US', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric', 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    }) : 'Not selected'}
-                  </p>
-                </>
-              )}
+            <div className="bg-pine-sand rounded-lg p-4">
+              <h4 className="font-medium text-pine-forest mb-2">Customer Details</h4>
+              <p className="text-sm text-pine-bark">Name: {bookingDetails.customerName}</p>
+              <p className="text-sm text-pine-bark">Email: {bookingDetails.email}</p>
+              <p className="text-sm text-pine-bark">Contact: {bookingDetails.contactNumber}</p>
+              <p className="text-sm text-pine-bark">
+                📅 Dates: {bookingDetails.selectedDate ? new Date(bookingDetails.selectedDate).toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                }) : 'Not selected'}{bookingDetails.selectedEndDate ? ` to ${new Date(bookingDetails.selectedEndDate).toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}` : ''}
+              </p>
             </div>
 
             {cartItems.map((item) => (
@@ -488,21 +530,33 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
           </div>
           
           <div className="border-t border-red-200 pt-4 mb-6">
+            {numberOfDays > 1 && (
+              <div className="flex items-center justify-between text-sm text-pine-bark mb-2">
+                <span>Base Price:</span>
+                <span>₱{totalPrice}</span>
+              </div>
+            )}
+            {numberOfDays > 1 && (
+              <div className="flex items-center justify-between text-sm text-pine-bark mb-2">
+                <span>Number of Days:</span>
+                <span>{numberOfDays} day{numberOfDays !== 1 ? 's' : ''}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between text-2xl font-noto font-semibold text-black">
               <span>Total:</span>
-              <span>₱{totalPrice}</span>
+              <span>₱{totalPriceWithDays}</span>
             </div>
           </div>
 
           <button
-            onClick={handlePlaceOrder}
+            onClick={handlePlaceBooking}
             className="w-full py-4 rounded-xl font-medium text-lg transition-all duration-200 transform bg-pine-forest text-white hover:bg-pine-sage hover:scale-[1.02]"
           >
-            Place Order via Messenger
+            Confirm Booking via Messenger
           </button>
           
-          <p className="text-xs text-gray-500 text-center mt-3">
-            You'll be redirected to Facebook Messenger to confirm your order. Don't forget to attach your payment screenshot!
+          <p className="text-xs text-pine-bark text-center mt-3">
+            You'll be redirected to Facebook Messenger to confirm your booking. Don't forget to attach your payment screenshot!
           </p>
         </div>
       </div>

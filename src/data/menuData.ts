@@ -201,13 +201,34 @@ export const menuData: MenuItem[] = [
     ],
     image: 'https://images.pexels.com/photos/4518843/pexels-photo-4518843.jpeg?auto=compress&cs=tinysrgb&w=800'
   },
+
+  // Food Items
+  {
+    id: 'burger',
+    name: 'Burger',
+    description: 'Delicious burger with fresh ingredients',
+    basePrice: 50,
+    category: 'food',
+    popular: true,
+    image: 'https://images.pexels.com/photos/1639557/pexels-photo-1639557.jpeg?auto=compress&cs=tinysrgb&w=800'
+  },
+  {
+    id: 'spaghetti',
+    name: 'Spaghetti',
+    description: 'Classic spaghetti with savory sauce',
+    basePrice: 100,
+    category: 'food',
+    popular: true,
+    image: 'https://images.pexels.com/photos/1279330/pexels-photo-1279330.jpeg?auto=compress&cs=tinysrgb&w=800'
+  },
 ];
 
 export const categories = [
   { id: 'dim-sum', name: 'Dim Sum', icon: '🥟' },
   { id: 'noodles', name: 'Noodles', icon: '🍜' },
   { id: 'rice-dishes', name: 'Rice Dishes', icon: '🍚' },
-  { id: 'beverages', name: 'Beverages', icon: '🍵' }
+  { id: 'beverages', name: 'Beverages', icon: '🍵' },
+  { id: 'food', name: 'Food', icon: '🍽️' }
 ];
 
 export const addOnCategories = [
